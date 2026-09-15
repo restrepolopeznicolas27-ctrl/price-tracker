@@ -3,19 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Price Tracking Dashboard - Alkosto vs Falabella</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; color: #333; }
         .container { max-width: 1440px; margin: 0 auto; padding: 24px; }
+
+        /* ===== HEADER ===== */
         .header {
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-            color: white; padding: 32px 40px; border-radius: 16px; margin-bottom: 24px;
+            color: white; padding: 28px 40px 32px; border-radius: 16px; margin-bottom: 24px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            position: relative;
         }
+        .header-top { display: flex; justify-content: space-between; align-items: flex-start; }
+        .header-left { flex: 1; }
+        .header-updated { font-size: 11px; opacity: 0.5; margin-bottom: 6px; }
         .header h1 { font-size: 26px; font-weight: 700; margin-bottom: 6px; }
         .header .subtitle { opacity: 0.75; font-size: 14px; }
         .header .source { opacity: 0.5; font-size: 12px; margin-top: 8px; }
+        .header-logos { display: flex; gap: 16px; align-items: center; margin-left: 24px; }
+        .logo-badge {
+            padding: 6px 18px; border-radius: 6px; font-size: 16px; font-weight: 700;
+            color: white; letter-spacing: 0.5px;
+        }
+        .logo-alkosto { background: #e67e22; }
+        .logo-falabella { background: #27ae60; }
+
+        /* ===== TOOLTIP ===== */
+        .tooltip-icon {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 16px; height: 16px; border-radius: 50%; background: #667eea; color: white;
+            font-size: 10px; font-weight: 700; cursor: help; margin-left: 8px; position: relative;
+            vertical-align: middle; flex-shrink: 0;
+        }
+        .tooltip-icon:hover .tooltip-text { display: block; }
+        .tooltip-text {
+            display: none; position: absolute; bottom: 125%; left: 50%; transform: translateX(-50%);
+            background: #1a1a2e; color: white; padding: 8px 12px; border-radius: 6px;
+            font-size: 11px; font-weight: 400; white-space: normal; width: 260px;
+            text-align: left; line-height: 1.4; z-index: 999; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        .tooltip-text::after {
+            content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+            border: 5px solid transparent; border-top-color: #1a1a2e;
+        }
+
+        /* ===== WEEK SELECTOR ===== */
         .week-selector {
             display: flex; gap: 8px; margin-bottom: 24px; align-items: center;
             background: white; padding: 16px 24px; border-radius: 12px;
@@ -29,6 +66,8 @@
         }
         .week-btn:hover { border-color: #667eea; color: #667eea; }
         .week-btn.active { background: #667eea; color: white; border-color: #667eea; }
+
+        /* ===== KPI ===== */
         .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
         .kpi-card {
             background: white; border-radius: 12px; padding: 20px 24px;
@@ -50,17 +89,22 @@
         .kpi-card.teal .value { color: #1abc9c; }
         .kpi-card.dark { border-left-color: #34495e; }
         .kpi-card.dark .value { color: #34495e; }
+
+        /* ===== CHARTS ===== */
         .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(480px, 1fr)); gap: 20px; margin-bottom: 24px; }
+        .chart-full { margin-bottom: 24px; }
         .chart-card {
             background: white; border-radius: 12px; padding: 24px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.06); min-height: 320px;
         }
-        .chart-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 16px; color: #444; }
+        .chart-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 16px; color: #444; display: flex; align-items: center; }
+
+        /* ===== TABLE ===== */
         .table-card {
             background: white; border-radius: 12px; padding: 24px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 24px;
         }
-        .table-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 16px; color: #444; }
+        .table-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 16px; color: #444; display: flex; align-items: center; }
         .table-wrapper { overflow-x: auto; max-height: 500px; overflow-y: auto; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
         th {
@@ -74,12 +118,16 @@
         .cheaper-falabella { color: #3498db; font-weight: 600; }
         .diff-positive { color: #e74c3c; }
         .diff-negative { color: #27ae60; }
+
+        /* ===== FILTERS ===== */
         .filters { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
         .filters select, .filters input {
             padding: 8px 14px; border: 1px solid #ddd; border-radius: 8px;
             font-size: 13px; background: white;
         }
         .filters input { min-width: 250px; }
+
+        /* ===== LEGEND ===== */
         .chart-legend { display: flex; gap: 16px; margin-top: 12px; justify-content: center; flex-wrap: wrap; }
         .chart-legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #666; }
         .chart-legend-color { width: 14px; height: 14px; border-radius: 3px; }
@@ -87,10 +135,18 @@
         .donut-legend { display: flex; flex-direction: column; gap: 10px; }
         .donut-legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; }
         .donut-legend-color { width: 16px; height: 16px; border-radius: 3px; }
+
+        /* ===== SECTION TITLE ===== */
         .section-title {
             font-size: 18px; font-weight: 700; color: #1a1a2e; margin: 32px 0 16px 0;
             padding-bottom: 8px; border-bottom: 2px solid #667eea;
+            display: flex; align-items: center;
         }
+
+        /* ===== ALERTS ===== */
+        .alerts-wrapper { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+        .alerts-column { }
+        .alerts-column h4 { font-size: 14px; font-weight: 600; margin-bottom: 12px; color: #444; }
         .alert-card {
             background: white; border-radius: 12px; padding: 16px 20px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 12px;
@@ -98,8 +154,18 @@
         }
         .alert-card.warning { border-left-color: #f39c12; }
         .alert-card.info { border-left-color: #3498db; }
+        .alert-card.decrease { border-left-color: #27ae60; }
         .alert-card .alert-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
         .alert-card .alert-desc { font-size: 12px; color: #666; }
+        .btn-see-more {
+            display: inline-block; padding: 6px 16px; background: #667eea; color: white;
+            border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;
+            margin-top: 4px;
+        }
+        .btn-see-more:hover { background: #5568d3; }
+        .alert-hidden { display: none; }
+
+        /* ===== TREND BADGE ===== */
         .trend-badge {
             display: inline-block; padding: 2px 10px; border-radius: 12px;
             font-size: 11px; font-weight: 600; text-transform: uppercase;
@@ -109,20 +175,110 @@
         .trend-stable { background: #f0f0f0; color: #666; }
         .trend-mixed { background: #fff8e6; color: #f39c12; }
         .trend-na { background: #f8f9fa; color: #999; }
-        .rank-table { width: 100%; }
-        .rank-table td:first-child { font-weight: 700; color: #667eea; width: 30px; }
+
+        /* ===== TIER LABELS ===== */
+        .tier-labels { display: flex; gap: 16px; margin-bottom: 12px; flex-wrap: wrap; }
+        .tier-label { font-size: 12px; color: #666; display: flex; align-items: center; gap: 4px; }
+        .tier-dot { width: 10px; height: 10px; border-radius: 2px; }
+
+        /* ===== BRAND ANALYSIS: Connected Layout ===== */
+        .brand-analysis-layout { display: flex; gap: 20px; margin-bottom: 24px; align-items: flex-start; }
+        .brand-chips-bar {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+            padding: 10px 16px; background: white; border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 16px;
+        }
+        .brand-chips-bar .brand-label {
+            font-size: 12px; font-weight: 600; color: #555; white-space: nowrap; margin-right: 4px;
+        }
+        .brand-chips-bar .brand-controls { margin-left: auto; display: flex; gap: 6px; }
+        .brand-chips { display: flex; flex-wrap: wrap; gap: 5px; flex: 1; }
+        .brand-chip {
+            padding: 4px 10px; border-radius: 14px; border: 2px solid #dee2e6; background: white;
+            cursor: pointer; font-size: 11px; font-weight: 500; color: #555; transition: all 0.2s;
+            user-select: none;
+        }
+        .brand-chip:hover { border-color: #667eea; color: #667eea; }
+        .brand-chip.active { background: #667eea; color: white; border-color: #667eea; }
+        .brand-controls { display: flex; gap: 6px; }
+        .brand-controls button {
+            padding: 3px 10px; border: 1px solid #dee2e6; border-radius: 6px; background: white;
+            cursor: pointer; font-size: 10px; color: #666;
+        }
+        .brand-controls button:hover { background: #f0f0f0; }
+
+        /* Left: scrollable product table */
+        .brand-table-area { flex: 0 0 42%; min-width: 280px; }
+        .brand-table-wrapper {
+            max-height: 420px; overflow: auto; border-radius: 8px; border: 1px solid #e9ecef;
+        }
+        .brand-table-wrapper table {
+            width: 100%; border-collapse: collapse; font-size: 11px; min-width: 500px;
+        }
+        .brand-table-wrapper thead th {
+            position: sticky; top: 0; z-index: 2; background: #667eea; color: white;
+            padding: 8px 6px; text-align: center; font-weight: 600; font-size: 11px;
+            border-right: 1px solid rgba(255,255,255,0.2);
+        }
+        .brand-table-wrapper thead th:first-child {
+            text-align: left; min-width: 140px; border-radius: 8px 0 0 0;
+        }
+        .brand-table-wrapper thead th:last-child { border-radius: 0 8px 0 0; border-right: none; }
+        .brand-table-wrapper tbody td {
+            padding: 6px; text-align: center; border-bottom: 1px solid #f0f0f0;
+            border-right: 1px solid #f8f9fa;
+        }
+        .brand-table-wrapper tbody td:first-child {
+            text-align: left; font-weight: 500; color: #333; position: sticky; left: 0;
+            background: white; z-index: 1;
+        }
+        .brand-table-wrapper tbody tr:hover td { background: #f8f9ff; }
+        .brand-table-wrapper tbody tr:hover td:first-child { background: #f8f9ff; }
+        .brand-table-wrapper tbody td:last-child { border-right: none; }
+        .price-up { color: #e74c3c; font-weight: 600; }
+        .price-down { color: #27ae60; font-weight: 600; }
+        .price-same { color: #999; }
+
+        /* Right: line chart */
+        .brand-chart-area { flex: 1; min-width: 0; }
+        .chart-tooltip {
+            position: absolute; pointer-events: none; display: none;
+            background: #1a1a2e; color: white; padding: 6px 10px; border-radius: 6px;
+            font-size: 11px; font-weight: 500; white-space: nowrap; z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25); transform: translate(-50%, -100%);
+        }
+        .chart-tooltip::after {
+            content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+            border: 5px solid transparent; border-top-color: #1a1a2e;
+        }
+
         @media (max-width: 768px) {
             .charts-grid { grid-template-columns: 1fr; }
             .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+            .alerts-wrapper { grid-template-columns: 1fr; }
+            .header-top { flex-direction: column; }
+            .header-logos { margin-left: 0; margin-top: 12px; }
+            .brand-analysis-layout { flex-direction: column; }
+        .brand-table-area { flex: none; width: 100%; }
         }
     </style>
 </head>
 <body>
 <div class="container">
+    <!-- ===== HEADER ===== -->
     <div class="header">
-        <h1>Price Tracking Dashboard</h1>
-        <div class="subtitle">Alkosto vs Falabella Colombia - Competitive Price Analysis</div>
-        <div class="source" id="header-source">Loading...</div>
+        <div class="header-top">
+            <div class="header-left">
+                <div class="header-updated" id="header-updated"></div>
+                <h1>Price Tracking Dashboard</h1>
+                <div class="subtitle">Alkosto vs Falabella Colombia - Competitive Price Analysis</div>
+                <div class="source" id="header-source">Loading...</div>
+            </div>
+            <div class="header-logos">
+                <span class="logo-badge logo-alkosto">Alkosto</span>
+                <span class="logo-badge logo-falabella">Falabella</span>
+            </div>
+        </div>
     </div>
 
     <div class="week-selector" id="week-selector">
@@ -130,24 +286,36 @@
     </div>
 
     <!-- ===== SECTION A: KPI SUMMARY ===== -->
-    <div class="section-title">Summary</div>
+    <div class="section-title">
+        Summary
+        <span class="tooltip-icon">?<span class="tooltip-text">Key metrics for the selected week including total products, matched products, and price comparison between retailers.</span></span>
+    </div>
     <div class="kpi-grid" id="kpi-grid"></div>
 
-    <!-- ===== SECTION B: PRICE EVOLUTION ===== -->
-    <div class="section-title">Price Evolution</div>
-    <div class="charts-grid">
+    <!-- ===== SECTION B: PRICE EVOLUTION (FULL WIDTH) ===== -->
+    <div class="section-title">
+        Price Evolution
+        <span class="tooltip-icon">?<span class="tooltip-text">Average price trends across weeks for both retailers. Shows how the average product price has evolved over time.</span></span>
+    </div>
+    <div class="filters" id="evolution-filters">
+        <select id="filter-evo-category"><option value="">All Categories</option></select>
+    </div>
+    <div class="chart-full">
         <div class="chart-card">
             <h3>Average Price by Week</h3>
             <div id="evolutionChart"></div>
         </div>
-        <div class="chart-card">
-            <h3>Average Difference % by Week</h3>
-            <div id="avgDiffChart"></div>
-        </div>
     </div>
 
     <!-- ===== SECTION C: TOP VARIATIONS ===== -->
-    <div class="section-title">Top Price Variations</div>
+    <div class="section-title">
+        Top Price Variations
+        <span class="tooltip-icon">?<span class="tooltip-text">Products with the largest price increases and decreases week-over-week. Max Increase % = highest price jump. Max Decrease % = biggest price drop.</span></span>
+    </div>
+    <div class="filters" id="top-variations-filters">
+        <select id="filter-top-category"><option value="">All Categories</option></select>
+        <select id="filter-top-week"><option value="">All Weeks</option></select>
+    </div>
     <div class="charts-grid">
         <div class="chart-card">
             <h3>Top 10 Largest Price Increases</h3>
@@ -160,69 +328,114 @@
     </div>
 
     <!-- ===== SECTION D: CONSECUTIVE TRENDS ===== -->
-    <div class="section-title">Consecutive Trends</div>
+    <div class="section-title">
+        Consecutive Trends
+        <span class="tooltip-icon">?<span class="tooltip-text">Products showing consistent price trends (increasing or decreasing) over multiple consecutive weeks.</span></span>
+    </div>
     <div class="charts-grid">
         <div class="chart-card">
-            <h3>Trend Distribution</h3>
+            <h3>
+                Trend Distribution
+                <span class="tooltip-icon">?<span class="tooltip-text">Distribution of all products by their overall price trend across all weeks: Increasing, Decreasing, Stable, Mixed, or N/A.</span></span>
+            </h3>
             <div id="trendChart"></div>
         </div>
         <div class="chart-card">
-            <h3>Products with Consecutive Changes</h3>
+            <h3>
+                Products with Consecutive Changes
+                <span class="tooltip-icon">?<span class="tooltip-text">Products that have shown the same price trend (increasing/decreasing) for 2+ consecutive weeks. Higher weeks = more persistent trend.</span></span>
+            </h3>
             <div id="consecutiveTable"></div>
         </div>
     </div>
 
-    <!-- ===== SECTION E: CATEGORY EVOLUTION ===== -->
-    <div class="section-title">Category Analysis</div>
-    <div class="charts-grid">
-        <div class="chart-card">
-            <h3>Competitiveness by Category</h3>
-            <div id="categoryChart"></div>
-        </div>
+    <!-- ===== SECTION E: CATEGORY ANALYSIS (FULL WIDTH) ===== -->
+    <div class="section-title">
+        Category Analysis
+        <span class="tooltip-icon">?<span class="tooltip-text">Average price change percentage by category week-over-week. Positive = prices increased, Negative = prices decreased.</span></span>
+    </div>
+    <div class="filters" id="category-filters">
+        <select id="filter-cat-week"><option value="">All Weeks</option></select>
+        <select id="filter-cat-retailer"><option value="">All Retailers</option><option value="Alkosto">Alkosto</option><option value="Falabella">Falabella</option></select>
+    </div>
+    <div class="chart-full">
         <div class="chart-card">
             <h3>Category Price Changes</h3>
             <div id="categoryChangeChart"></div>
         </div>
     </div>
 
-    <!-- ===== SECTION F: BRAND EVOLUTION ===== -->
-    <div class="section-title">Brand Analysis</div>
-    <div class="charts-grid">
-        <div class="chart-card">
-            <h3>Competitiveness by Brand (Top 15)</h3>
-            <div id="brandChart"></div>
+    <!-- ===== SECTION F: BRAND ANALYSIS (REDESIGNED) ===== -->
+    <div class="section-title">
+        Brand Analysis
+        <span class="tooltip-icon">?<span class="tooltip-text">Connected view: left table shows individual product prices week-by-week; right chart shows the average price trend. Filter by brand and category to drill down.</span></span>
+    </div>
+    <div class="filters" id="brand-filters">
+        <select id="filter-brand-category"><option value="">All Categories</option></select>
+        <select id="filter-brand-retailer"><option value="">All Retailers</option><option value="Alkosto">Alkosto</option><option value="Falabella">Falabella</option></select>
+    </div>
+    <div class="brand-chips-bar">
+        <span class="brand-label">Brands:</span>
+        <div class="brand-chips" id="brand-chips"></div>
+        <div class="brand-controls">
+            <button onclick="selectAllBrands()">Select All</button>
+            <button onclick="clearAllBrands()">Clear All</button>
         </div>
-        <div class="chart-card">
-            <h3>Brand Price Changes</h3>
-            <div id="brandChangeChart"></div>
+    </div>
+    <div class="brand-analysis-layout">
+        <div class="brand-table-area">
+            <div class="chart-card" style="padding:0;">
+                <h3 style="margin-bottom:0; padding: 16px 24px 0 24px;">
+                    Product Prices
+                    <span class="tooltip-icon">?<span class="tooltip-text">Individual product prices per week. Scroll to see all products and weeks.</span></span>
+                </h3>
+                <div class="brand-table-wrapper" id="brandProductTable"></div>
+            </div>
+        </div>
+        <div class="brand-chart-area">
+            <div class="chart-card" style="position:relative;">
+                <h3>
+                    Average Price Trend
+                    <span class="tooltip-icon">?<span class="tooltip-text">Average price of selected brand/category across the last weeks. Helps spot overall trends.</span></span>
+                </h3>
+                <div id="brandAvgTrendChart" style="position:relative;"></div>
+                <div class="chart-tooltip" id="brandChartTooltip"></div>
+            </div>
         </div>
     </div>
 
-    <!-- ===== SECTION G: COMPETITIVENESS ===== -->
-    <div class="section-title">Retailer Competitiveness</div>
-    <div class="charts-grid">
-        <div class="chart-card">
-            <h3>Competitiveness by Week</h3>
-            <div id="competitivenessWeekChart"></div>
-        </div>
-        <div class="chart-card">
-            <h3>Cheaper Retailer Distribution</h3>
-            <div id="competitivenessChart"></div>
-        </div>
+    <!-- ===== SECTION G: PRICE TIER TRENDS (NEW) ===== -->
+    <div class="section-title">
+        Price Tier Trends
+        <span class="tooltip-icon">?<span class="tooltip-text">Price analysis by price tier (Low/Medium/High) within each category. Shows movement direction and most volatile products per tier.</span></span>
     </div>
+    <div class="filters" id="tier-filters">
+        <select id="filter-tier-category"><option value="">Select Category</option></select>
+        <select id="filter-tier-retailer"><option value="">All Retailers</option><option value="Alkosto">Alkosto</option><option value="Falabella">Falabella</option></select>
+    </div>
+    <div id="tier-labels" class="tier-labels"></div>
     <div class="charts-grid">
         <div class="chart-card">
-            <h3>Top 15 Largest Price Differences</h3>
-            <div id="topDiffChart"></div>
+            <h3>
+                Price Movement Direction by Tier
+                <span class="tooltip-icon">?<span class="tooltip-text">Shows how many products in each price tier (Low/Medium/High) increased or decreased prices vs the previous week.</span></span>
+            </h3>
+            <div id="tierMovementChart"></div>
         </div>
         <div class="chart-card">
-            <h3>Price Difference Distribution</h3>
-            <div id="diffDistChart"></div>
+            <h3>
+                Most Volatile Products by Tier
+                <span class="tooltip-icon">?<span class="tooltip-text">Products with the most price changes across weeks, grouped by price tier. Hover a bar to see weekly change details.</span></span>
+            </h3>
+            <div id="tierVolatileChart"></div>
         </div>
     </div>
 
     <!-- ===== SECTION H: VARIATION MATRIX ===== -->
-    <div class="section-title">Variation Matrix</div>
+    <div class="section-title">
+        Variation Matrix
+        <span class="tooltip-icon">?<span class="tooltip-text">Week-over-week price evolution for each product across both retailers. Shows price history, total change, trend direction, and cheapest retailer.</span></span>
+    </div>
     <div class="table-card">
         <h3>Product Price Evolution</h3>
         <div class="filters">
@@ -235,6 +448,7 @@
                 <option value="Mixed">Mixed</option>
                 <option value="N/A">N/A</option>
             </select>
+            <select id="filter-matrix-week"><option value="">All Weeks</option></select>
             <input type="text" id="filter-search" placeholder="Search product...">
         </div>
         <div class="table-wrapper">
@@ -248,11 +462,31 @@
     </div>
 
     <!-- ===== SECTION I: ALERTS ===== -->
-    <div class="section-title">Alerts</div>
-    <div id="alerts-container"></div>
+    <div class="section-title">
+        Alerts
+        <span class="tooltip-icon">?<span class="tooltip-text">Products with price changes exceeding the threshold (20%) week-over-week. Orange = increases, Green = decreases.</span></span>
+    </div>
+    <div class="filters" id="alerts-filters">
+        <select id="filter-alerts-category"><option value="">All Categories</option></select>
+    </div>
+    <div class="alerts-wrapper">
+        <div class="alerts-column">
+            <h4 style="color:#e74c3c;">Price Increases</h4>
+            <div id="alerts-increase"></div>
+            <button class="btn-see-more" id="btn-more-increase" style="display:none;" onclick="showMoreAlerts('increase')">Ver m&#225;s</button>
+        </div>
+        <div class="alerts-column">
+            <h4 style="color:#27ae60;">Price Decreases</h4>
+            <div id="alerts-decrease"></div>
+            <button class="btn-see-more" id="btn-more-decrease" style="display:none;" onclick="showMoreAlerts('decrease')">Ver m&#225;s</button>
+        </div>
+    </div>
 
     <!-- ===== SECTION J: PRODUCT COMPARISON TABLE ===== -->
-    <div class="section-title">Product Comparison Detail</div>
+    <div class="section-title">
+        Product Comparison Detail
+        <span class="tooltip-icon">?<span class="tooltip-text">Detailed price comparison between Alkosto and Falabella for the selected week. Shows difference % and which retailer is cheaper.</span></span>
+    </div>
     <div class="table-card">
         <h3>Detailed Comparison</h3>
         <div class="filters">
@@ -263,6 +497,7 @@
                 <option value="Falabella">Falabella Cheaper</option>
                 <option value="Same Price">Same Price</option>
             </select>
+            <select id="filter2-week"><option value="">All Weeks</option></select>
             <input type="text" id="filter2-search" placeholder="Search product...">
         </div>
         <div class="table-wrapper">
@@ -307,25 +542,24 @@ async function loadData() {
 }
 
 function initDashboard() {
+    // Header updated date
+    if (DATA.last_updated) {
+        document.getElementById('header-updated').textContent = 'Last updated: ' + DATA.last_updated;
+    }
     document.getElementById('header-source').textContent =
         'Data source: Comparativo sheet (Homologation-based matching) | Weeks: ' + DATA.weeks.join(', ') +
         ' | Alert threshold: ' + DATA.alert_threshold + '%';
     renderWeekButtons();
     renderKPIs();
     renderEvolutionChart();
-    renderAvgDiffChart();
     renderTopIncreaseChart();
     renderTopDecreaseChart();
     renderTrendChart();
     renderConsecutiveTable();
-    renderCategoryChart();
     renderCategoryChangeChart();
-    renderBrandChart();
-    renderBrandChangeChart();
-    renderCompetitivenessWeekChart();
-    renderCompetitivenessChart();
-    renderTopDiffChart();
-    renderDiffDistChart();
+    renderBrandAnalysis();
+    renderTierMovementChart();
+    renderTierVolatileChart();
     renderMatrixHeader();
     renderMatrix();
     renderAlerts();
@@ -355,19 +589,14 @@ function switchWeek(week) {
     document.querySelectorAll('.week-btn').forEach(b => b.classList.toggle('active', b.dataset.week === week));
     renderKPIs();
     renderEvolutionChart();
-    renderAvgDiffChart();
     renderTopIncreaseChart();
     renderTopDecreaseChart();
     renderTrendChart();
     renderConsecutiveTable();
-    renderCategoryChart();
     renderCategoryChangeChart();
-    renderBrandChart();
-    renderBrandChangeChart();
-    renderCompetitivenessWeekChart();
-    renderCompetitivenessChart();
-    renderTopDiffChart();
-    renderDiffDistChart();
+    renderBrandAnalysis();
+    renderTierMovementChart();
+    renderTierVolatileChart();
     renderMatrix();
     renderAlerts();
     renderTable();
@@ -386,6 +615,13 @@ function formatPriceShort(v) {
     if (v === null || v === undefined) return 'N/A';
     if (v >= 1000000) return (v / 1000000).toFixed(1) + 'M';
     if (v >= 1000) return (v / 1000).toFixed(0) + 'K';
+    return v.toString();
+}
+
+function formatPriceAxis(v) {
+    if (v === null || v === undefined) return 'N/A';
+    if (v >= 1000000) return (v / 1000000).toFixed(2) + 'M';
+    if (v >= 1000) return (v / 1000).toFixed(1) + 'K';
     return v.toString();
 }
 
@@ -442,16 +678,33 @@ function svgEl(svg, tag, attrs) {
 }
 
 /* ============================================================
-   CHART: Average Price Evolution (Line)
+   CHART: Average Price Evolution (Line) - FULL WIDTH
    ============================================================ */
 
 function renderEvolutionChart() {
     const container = document.getElementById('evolutionChart');
     container.innerHTML = '';
     const weeks = DATA.weeks;
-    const evo = DATA.weekly_evolution;
 
-    const W = 500, H = 260, padL = 70, padR = 20, padT = 20, padB = 40;
+    const catFilter = document.getElementById('filter-evo-category').value;
+
+    // Compute avg prices per week, optionally filtered by category
+    const evo = {};
+    weeks.forEach(w => {
+        let alkPrices = [], falPrices = [];
+        DATA.products.forEach(p => {
+            if (catFilter && p.category !== catFilter) return;
+            const wd = p.weeks[w];
+            if (wd && wd.alkosto !== null && wd.alkosto !== undefined) alkPrices.push(wd.alkosto);
+            if (wd && wd.falabella !== null && wd.falabella !== undefined) falPrices.push(wd.falabella);
+        });
+        evo[w] = {
+            avg_alkosto: alkPrices.length ? alkPrices.reduce((a, b) => a + b, 0) / alkPrices.length : null,
+            avg_falabella: falPrices.length ? falPrices.reduce((a, b) => a + b, 0) / falPrices.length : null
+        };
+    });
+
+    const W = 900, H = 280, padL = 70, padR = 20, padT = 20, padB = 40;
     const chartW = W - padL - padR;
     const chartH = H - padT - padB;
 
@@ -473,7 +726,7 @@ function renderEvolutionChart() {
         const y = padT + (i / 4) * chartH;
         const val = maxV - (i / 4) * range;
         svgEl(svg, "line", {x1: padL, y1: y, x2: W - padR, y2: y, stroke: "#eee", "stroke-width": 1});
-        svgEl(svg, "text", {x: padL - 8, y: y + 4, "text-anchor": "end", "font-size": "10", fill: "#888"}).textContent = formatPriceShort(val);
+        svgEl(svg, "text", {x: padL - 8, y: y + 4, "text-anchor": "end", "font-size": "10", fill: "#888"}).textContent = formatPriceAxis(val);
     }
 
     // Lines
@@ -492,8 +745,11 @@ function renderEvolutionChart() {
         }
 
         points.forEach(p => {
-            svgEl(svg, "circle", {cx: p.x, cy: p.y, r: 5, fill: series.color, stroke: "white", "stroke-width": 2});
-            svgEl(svg, "text", {x: p.x, y: p.y - 10, "text-anchor": "middle", "font-size": "9", fill: series.color, "font-weight": "600"}).textContent = formatPriceShort(p.val);
+            const circle = svgEl(svg, "circle", {cx: p.x, cy: p.y, r: 5, fill: series.color, stroke: "white", "stroke-width": 2, style: "cursor:pointer;"});
+            const title = document.createElementNS("http://www.w3.org/2000/svg", "title");
+            title.textContent = `${weeks[points.indexOf(p)]} (${series.label}): ${formatPrice(p.val)}`;
+            circle.appendChild(title);
+            svgEl(svg, "text", {x: p.x, y: p.y - 10, "text-anchor": "middle", "font-size": "9", fill: series.color, "font-weight": "600"}).textContent = formatPriceAxis(p.val);
         });
     });
 
@@ -514,62 +770,7 @@ function renderEvolutionChart() {
 }
 
 /* ============================================================
-   CHART: Average Difference % (Line)
-   ============================================================ */
-
-function renderAvgDiffChart() {
-    const container = document.getElementById('avgDiffChart');
-    container.innerHTML = '';
-    const weeks = DATA.weeks;
-    const evo = DATA.weekly_evolution;
-
-    const W = 500, H = 260, padL = 60, padR = 20, padT = 20, padB = 40;
-    const chartW = W - padL - padR;
-    const chartH = H - padT - padB;
-
-    const vals = weeks.map(w => evo[w].avg_diff_pct * 100);
-    const minV = Math.min(...vals, 0);
-    const maxV = Math.max(...vals, 0);
-    const range = maxV - minV || 1;
-
-    const svg = createSVG(W, H);
-    const zeroY = padT + ((maxV) / range) * chartH;
-    svgEl(svg, "line", {x1: padL, y1: zeroY, x2: W - padR, y2: zeroY, stroke: "#ccc", "stroke-width": 1, "stroke-dasharray": "4,4"});
-
-    for (let i = 0; i <= 4; i++) {
-        const y = padT + (i / 4) * chartH;
-        const val = maxV - (i / 4) * range;
-        svgEl(svg, "line", {x1: padL, y1: y, x2: W - padR, y2: y, stroke: "#eee", "stroke-width": 1});
-        svgEl(svg, "text", {x: padL - 8, y: y + 4, "text-anchor": "end", "font-size": "11", fill: "#888"}).textContent = val.toFixed(1) + '%';
-    }
-
-    const points = weeks.map((w, i) => {
-        const x = padL + (weeks.length > 1 ? (i / (weeks.length - 1)) * chartW : chartW / 2);
-        const y = padT + ((maxV - vals[i]) / range) * chartH;
-        return { x, y, w, val: vals[i] };
-    });
-
-    if (points.length > 1) {
-        let areaD = `M ${points[0].x} ${zeroY} `;
-        points.forEach(p => { areaD += `L ${p.x} ${p.y} `; });
-        areaD += `L ${points[points.length-1].x} ${zeroY} Z`;
-        svgEl(svg, "path", {d: areaD, fill: "rgba(102,126,234,0.1)"});
-        let lineD = `M ${points[0].x} ${points[0].y}`;
-        for (let i = 1; i < points.length; i++) lineD += ` L ${points[i].x} ${points[i].y}`;
-        svgEl(svg, "path", {d: lineD, fill: "none", stroke: "#667eea", "stroke-width": 3, "stroke-linecap": "round", "stroke-linejoin": "round"});
-    }
-
-    points.forEach(p => {
-        svgEl(svg, "circle", {cx: p.x, cy: p.y, r: 5, fill: "#667eea", stroke: "white", "stroke-width": 2});
-        svgEl(svg, "text", {x: p.x, y: p.y - 12, "text-anchor": "middle", "font-size": "11", fill: "#667eea", "font-weight": "600"}).textContent = p.val.toFixed(2) + '%';
-        svgEl(svg, "text", {x: p.x, y: H - 10, "text-anchor": "middle", "font-size": "12", fill: "#555", "font-weight": "600"}).textContent = p.w;
-    });
-
-    container.appendChild(svg);
-}
-
-/* ============================================================
-   CHART: Top Increases / Decreases (Horizontal bars)
+   CHART: Top Increases / Decreases (Horizontal bars) with TOOLTIPS + FILTERS
    ============================================================ */
 
 function renderTopIncreaseChart() {
@@ -583,7 +784,36 @@ function renderTopDecreaseChart() {
 function renderTopVariationChart(key, containerId, color) {
     const container = document.getElementById(containerId);
     container.innerHTML = '';
-    const items = DATA[key][currentWeek] || [];
+
+    // Get filtered data
+    const catFilter = document.getElementById('filter-top-category').value;
+    const weekFilter = document.getElementById('filter-top-week').value;
+
+    let items = [];
+    if (weekFilter) {
+        items = (DATA[key][weekFilter] || []).map(d => { d._week = weekFilter; return d; });
+    } else {
+        // Combine all weeks, tagging each item with its week
+        DATA.weeks.forEach(w => {
+            if (DATA[key][w]) {
+                DATA[key][w].forEach(d => { d._week = w; items.push(d); });
+            }
+        });
+        // Deduplicate by product_key, keep highest change
+        const seen = {};
+        items.forEach(d => {
+            if (!seen[d.product_key] || Math.abs(d.change_pct) > Math.abs(seen[d.product_key].change_pct)) {
+                seen[d.product_key] = d;
+            }
+        });
+        items = Object.values(seen).sort((a, b) => Math.abs(b.change_pct) - Math.abs(a.change_pct));
+    }
+
+    if (catFilter) {
+        items = items.filter(d => d.category === catFilter);
+    }
+
+    items = items.slice(0, 10);
     if (items.length === 0) { container.innerHTML = '<p style="text-align:center;color:#999;padding:40px;">No data</p>'; return; }
 
     const maxAbs = Math.max(...items.map(d => Math.abs(d.change_pct)), 0.01);
@@ -597,10 +827,34 @@ function renderTopVariationChart(key, containerId, color) {
         const shortName = d.product.length > 20 ? d.product.substring(0, 20) + '\u2026' : d.product;
         const pct = (Math.abs(d.change_pct) / maxAbs) * chartW;
 
-        svgEl(svg, "text", {x: labelW - 6, y: y + barH / 2 + 4, "text-anchor": "end", "font-size": "10", fill: "#555"}).textContent = shortName;
-        svgEl(svg, "rect", {x: labelW, y: y, width: pct, height: barH, fill: color, rx: 2, opacity: 0.8});
-        svgEl(svg, "text", {x: labelW + pct + 4, y: y + barH / 2 + 4, "font-size": "10", fill: color, "font-weight": "600"}).textContent =
-            (d.change_pct * 100).toFixed(1) + '%';
+        // Label with tooltip
+        const textEl = svgEl(svg, "text", {x: labelW - 6, y: y + barH / 2 + 4, "text-anchor": "end", "font-size": "10", fill: "#555", "data-tooltip": d.product});
+        textEl.textContent = shortName;
+        if (d.product.length > 20) {
+            textEl.style.cursor = 'help';
+            textEl.style.textDecoration = 'underline dotted';
+            const title = document.createElementNS("http://www.w3.org/2000/svg", "title");
+            title.textContent = d.product;
+            textEl.appendChild(title);
+        }
+
+        // Bar with tooltip
+        const barRect = svgEl(svg, "rect", {x: labelW, y: y, width: pct, height: barH, fill: color, rx: 2, opacity: 0.8, style: "cursor:help;"});
+        const barTitle = document.createElementNS("http://www.w3.org/2000/svg", "title");
+        const alkPrev = d.alkosto_prev !== null && d.alkosto_prev !== undefined ? 'Alkosto: ' + formatPrice(d.alkosto_prev) + ' → ' + formatPrice(d.alkosto_curr) : '';
+        const falPrev = d.falabella_prev !== null && d.falabella_prev !== undefined ? 'Falabella: ' + formatPrice(d.falabella_prev) + ' → ' + formatPrice(d.falabella_curr) : '';
+        const parts = [d.product, d._week + ': ' + (d.change_pct > 0 ? '+' : '') + d.change_pct.toFixed(1) + '%'];
+        if (alkPrev) parts.push(alkPrev);
+        if (falPrev) parts.push(falPrev);
+        barTitle.textContent = parts.join('\n');
+        barRect.appendChild(barTitle);
+
+        // Value text with tooltip
+        const valText = svgEl(svg, "text", {x: labelW + pct + 4, y: y + barH / 2 + 4, "font-size": "10", fill: color, "font-weight": "600", style: "cursor:help;"});
+        valText.textContent = d.change_pct.toFixed(1) + '%';
+        const valTitle = document.createElementNS("http://www.w3.org/2000/svg", "title");
+        valTitle.textContent = barTitle.textContent;
+        valText.appendChild(valTitle);
     });
 
     container.appendChild(svg);
@@ -700,363 +954,598 @@ function renderConsecutiveTable() {
 }
 
 /* ============================================================
-   CHART: Category Competitiveness (Horizontal stacked bars)
-   ============================================================ */
-
-function renderCategoryChart() {
-    const container = document.getElementById('categoryChart');
-    container.innerHTML = '';
-    const catStats = DATA.category_stats[currentWeek];
-    const cats = Object.keys(catStats);
-    if (cats.length === 0) { container.innerHTML = '<p>No data</p>'; return; }
-
-    const maxVal = Math.max(...cats.map(c => {
-        const s = catStats[c];
-        return s.alkosto_cheaper + s.falabella_cheaper + s.same;
-    }), 1);
-
-    const barH = 22, gap = 6, labelW = 100, W = 500;
-    const chartW = W - labelW - 30;
-    const H = cats.length * (barH + gap) + 30;
-    const svg = createSVG(W, H);
-
-    cats.forEach((c, i) => {
-        const s = catStats[c];
-        const y = i * (barH + gap) + 10;
-        const shortLabel = c.length > 14 ? c.substring(0, 14) + '\u2026' : c;
-        svgEl(svg, "text", {x: labelW - 8, y: y + barH / 2 + 4, "text-anchor": "end", "font-size": "11", fill: "#555"}).textContent = shortLabel;
-
-        let xBase = labelW;
-        [{ val: s.alkosto_cheaper, color: "#27ae60" }, { val: s.falabella_cheaper, color: "#3498db" }, { val: s.same, color: "#95a5a6" }].forEach(seg => {
-            const w = (seg.val / maxVal) * chartW;
-            if (w > 0) {
-                svgEl(svg, "rect", {x: xBase, y: y, width: w, height: barH, fill: seg.color, rx: 2});
-                if (w > 24) svgEl(svg, "text", {x: xBase + w / 2, y: y + barH / 2 + 4, "text-anchor": "middle", "font-size": "10", fill: "white", "font-weight": "600"}).textContent = seg.val;
-                xBase += w;
-            }
-        });
-    });
-
-    container.appendChild(svg);
-    const legend = document.createElement('div');
-    legend.className = 'chart-legend';
-    legend.innerHTML = `
-        <div class="chart-legend-item"><div class="chart-legend-color" style="background:#27ae60"></div>Alkosto</div>
-        <div class="chart-legend-item"><div class="chart-legend-color" style="background:#3498db"></div>Falabella</div>
-        <div class="chart-legend-item"><div class="chart-legend-color" style="background:#95a5a6"></div>Same</div>
-    `;
-    container.appendChild(legend);
-}
-
-/* ============================================================
-   CHART: Category Price Changes (Horizontal bars)
+   CHART: Category Price Changes (FULL WIDTH)
    ============================================================ */
 
 function renderCategoryChangeChart() {
     const container = document.getElementById('categoryChangeChart');
     container.innerHTML = '';
-    const changes = DATA.category_changes[currentWeek] || [];
+
+    const weekFilter = document.getElementById('filter-cat-week').value;
+
+    let changes = [];
+    if (weekFilter) {
+        changes = DATA.category_changes[weekFilter] || [];
+    } else {
+        // Average across all weeks
+        const catMap = {};
+        DATA.weeks.forEach(w => {
+            (DATA.category_changes[w] || []).forEach(c => {
+                if (!catMap[c.category]) catMap[c.category] = { sum: 0, count: 0 };
+                catMap[c.category].sum += c.avg_change_pct;
+                catMap[c.category].count++;
+            });
+        });
+        changes = Object.entries(catMap).map(([cat, v]) => ({
+            category: cat,
+            avg_change_pct: v.sum / v.count
+        }));
+    }
+
     if (changes.length === 0) { container.innerHTML = '<p>No data</p>'; return; }
 
     const maxAbs = Math.max(...changes.map(c => Math.abs(c.avg_change_pct)), 0.01);
-    const barH = 22, gap = 6, labelW = 100, W = 500;
-    const chartW = W - labelW - 60;
+    const barH = 28, gap = 8, labelW = 120, W = 900;
+    const chartW = W - labelW - 80;
     const H = changes.length * (barH + gap) + 20;
     const svg = createSVG(W, H);
     const midX = labelW + chartW / 2;
 
-    // Zero line
     svgEl(svg, "line", {x1: midX, y1: 5, x2: midX, y2: H - 5, stroke: "#ccc", "stroke-width": 1, "stroke-dasharray": "4,4"});
 
     changes.forEach((c, i) => {
         const y = i * (barH + gap) + 10;
         const shortLabel = c.category.length > 14 ? c.category.substring(0, 14) + '\u2026' : c.category;
-        svgEl(svg, "text", {x: labelW - 8, y: y + barH / 2 + 4, "text-anchor": "end", "font-size": "11", fill: "#555"}).textContent = shortLabel;
+        svgEl(svg, "text", {x: labelW - 8, y: y + barH / 2 + 4, "text-anchor": "end", "font-size": "12", fill: "#555"}).textContent = shortLabel;
 
         const barW = (Math.abs(c.avg_change_pct) / maxAbs) * (chartW / 2);
         const color = c.avg_change_pct >= 0 ? '#e74c3c' : '#27ae60';
         const x = c.avg_change_pct >= 0 ? midX : midX - barW;
         svgEl(svg, "rect", {x: x, y: y, width: barW, height: barH, fill: color, rx: 2, opacity: 0.8});
-        svgEl(svg, "text", {x: x + (c.avg_change_pct >= 0 ? barW + 4 : -4), y: y + barH / 2 + 4, "text-anchor": c.avg_change_pct >= 0 ? "start" : "end", "font-size": "10", fill: color, "font-weight": "600"}).textContent = (c.avg_change_pct * 100).toFixed(1) + '%';
+        svgEl(svg, "text", {x: x + (c.avg_change_pct >= 0 ? barW + 4 : -4), y: y + barH / 2 + 4, "text-anchor": c.avg_change_pct >= 0 ? "start" : "end", "font-size": "11", fill: color, "font-weight": "600"}).textContent = (c.avg_change_pct * 100).toFixed(1) + '%';
     });
 
     container.appendChild(svg);
 }
 
 /* ============================================================
-   CHART: Brand Competitiveness (Horizontal stacked bars)
-   ============================================================ */
+    BRAND ANALYSIS: Brand Panel + Product Changes Chart
+    ============================================================ */
 
-function renderBrandChart() {
-    const container = document.getElementById('brandChart');
-    container.innerHTML = '';
-    const brandStats = DATA.brand_stats[currentWeek];
-    const sorted = Object.entries(brandStats).sort((a,b) => b[1].total - a[1].total).slice(0, 15);
-    if (sorted.length === 0) { container.innerHTML = '<p>No data</p>'; return; }
+let selectedBrands = new Set();
 
-    const maxVal = Math.max(...sorted.map(b => b[1].total), 1);
-    const barH = 20, gap = 5, labelW = 90, W = 500;
-    const chartW = W - labelW - 30;
-    const H = sorted.length * (barH + gap) + 20;
-    const svg = createSVG(W, H);
+function getLastNWeeks(n) {
+    // Return last N weeks from DATA.weeks (up to 5)
+    const all = DATA.weeks;
+    return all.slice(-Math.min(n, all.length));
+}
 
-    sorted.forEach(([name, s], i) => {
-        const y = i * (barH + gap) + 8;
-        const shortName = name.length > 10 ? name.substring(0, 10) + '\u2026' : name;
-        svgEl(svg, "text", {x: labelW - 6, y: y + barH / 2 + 4, "text-anchor": "end", "font-size": "11", fill: "#555"}).textContent = shortName;
-
-        const alkW = (s.alkosto_cheaper / maxVal) * chartW;
-        const falW = (s.falabella_cheaper / maxVal) * chartW;
-        if (alkW > 0) {
-            svgEl(svg, "rect", {x: labelW, y: y, width: alkW, height: barH, fill: "#27ae60", rx: 2});
-            if (alkW > 20) svgEl(svg, "text", {x: labelW + alkW / 2, y: y + barH / 2 + 4, "text-anchor": "middle", "font-size": "10", fill: "white", "font-weight": "600"}).textContent = s.alkosto_cheaper;
+function getAvgPrice(products, week, retailerFilter) {
+    let sum = 0, count = 0;
+    products.forEach(p => {
+        const wd = p.weeks[week];
+        if (!wd) return;
+        let price = null;
+        if (retailerFilter === 'Alkosto') {
+            price = wd.alkosto;
+        } else if (retailerFilter === 'Falabella') {
+            price = wd.falabella;
+        } else {
+            // Average of both retailers for this product
+            let prices = [];
+            if (wd.alkosto !== null && wd.alkosto !== undefined) prices.push(wd.alkosto);
+            if (wd.falabella !== null && wd.falabella !== undefined) prices.push(wd.falabella);
+            if (prices.length > 0) price = prices.reduce((a, b) => a + b, 0) / prices.length;
         }
-        if (falW > 0) {
-            svgEl(svg, "rect", {x: labelW + alkW, y: y, width: falW, height: barH, fill: "#3498db", rx: 2});
-            if (falW > 20) svgEl(svg, "text", {x: labelW + alkW + falW / 2, y: y + barH / 2 + 4, "text-anchor": "middle", "font-size": "10", fill: "white", "font-weight": "600"}).textContent = s.falabella_cheaper;
-        }
+        if (price !== null) { sum += price; count++; }
     });
-
-    container.appendChild(svg);
-    const legend = document.createElement('div');
-    legend.className = 'chart-legend';
-    legend.innerHTML = `
-        <div class="chart-legend-item"><div class="chart-legend-color" style="background:#27ae60"></div>Alkosto Cheaper</div>
-        <div class="chart-legend-item"><div class="chart-legend-color" style="background:#3498db"></div>Falabella Cheaper</div>
-    `;
-    container.appendChild(legend);
+    return count > 0 ? sum / count : null;
 }
 
-/* ============================================================
-   CHART: Brand Price Changes (Horizontal bars)
-   ============================================================ */
-
-function renderBrandChangeChart() {
-    const container = document.getElementById('brandChangeChart');
-    container.innerHTML = '';
-    const changes = DATA.brand_changes[currentWeek] || [];
-    if (changes.length === 0) { container.innerHTML = '<p>No data</p>'; return; }
-
-    const maxAbs = Math.max(...changes.map(c => Math.abs(c.avg_change_pct)), 0.01);
-    const barH = 20, gap = 5, labelW = 90, W = 500;
-    const chartW = W - labelW - 60;
-    const H = changes.length * (barH + gap) + 20;
-    const svg = createSVG(W, H);
-    const midX = labelW + chartW / 2;
-
-    svgEl(svg, "line", {x1: midX, y1: 5, x2: midX, y2: H - 5, stroke: "#ccc", "stroke-width": 1, "stroke-dasharray": "4,4"});
-
-    changes.forEach((c, i) => {
-        const y = i * (barH + gap) + 8;
-        const shortName = c.brand.length > 10 ? c.brand.substring(0, 10) + '\u2026' : c.brand;
-        svgEl(svg, "text", {x: labelW - 6, y: y + barH / 2 + 4, "text-anchor": "end", "font-size": "11", fill: "#555"}).textContent = shortName;
-
-        const barW = (Math.abs(c.avg_change_pct) / maxAbs) * (chartW / 2);
-        const color = c.avg_change_pct >= 0 ? '#e74c3c' : '#27ae60';
-        const x = c.avg_change_pct >= 0 ? midX : midX - barW;
-        svgEl(svg, "rect", {x: x, y: y, width: barW, height: barH, fill: color, rx: 2, opacity: 0.8});
-        svgEl(svg, "text", {x: x + (c.avg_change_pct >= 0 ? barW + 4 : -4), y: y + barH / 2 + 4, "text-anchor": c.avg_change_pct >= 0 ? "start" : "end", "font-size": "10", fill: color, "font-weight": "600"}).textContent = (c.avg_change_pct * 100).toFixed(1) + '%';
-    });
-
-    container.appendChild(svg);
+function getProductPrice(product, week, retailerFilter) {
+    const wd = product.weeks[week];
+    if (!wd) return null;
+    if (retailerFilter === 'Alkosto') return wd.alkosto;
+    if (retailerFilter === 'Falabella') return wd.falabella;
+    // Average
+    let prices = [];
+    if (wd.alkosto !== null && wd.alkosto !== undefined) prices.push(wd.alkosto);
+    if (wd.falabella !== null && wd.falabella !== undefined) prices.push(wd.falabella);
+    return prices.length > 0 ? prices.reduce((a, b) => a + b, 0) / prices.length : null;
 }
 
-/* ============================================================
-   CHART: Competitiveness by Week (Stacked bar)
-   ============================================================ */
+function getFilteredProducts() {
+    const catFilter = document.getElementById('filter-brand-category').value;
+    const retailerFilter = document.getElementById('filter-brand-retailer').value;
+    return DATA.products.filter(p => {
+        if (!selectedBrands.has(p.brand)) return false;
+        if (catFilter && p.category !== catFilter) return false;
+        return true;
+    });
+}
 
-function renderCompetitivenessWeekChart() {
-    const container = document.getElementById('competitivenessWeekChart');
+function initBrandPanel() {
+    const catFilter = document.getElementById('filter-brand-category').value;
+    const brands = [...new Set(DATA.products
+        .filter(p => !catFilter || p.category === catFilter)
+        .map(p => p.brand)
+        .filter(Boolean)
+    )].sort();
+
+    selectedBrands = new Set(brands);
+
+    const container = document.getElementById('brand-chips');
     container.innerHTML = '';
-    const evolution = DATA.weekly_evolution;
-    const weeks = DATA.weeks;
+    brands.forEach(b => {
+        const chip = document.createElement('span');
+        chip.className = 'brand-chip active';
+        chip.textContent = b;
+        chip.onclick = () => {
+            if (selectedBrands.has(b)) {
+                selectedBrands.delete(b);
+                chip.classList.remove('active');
+            } else {
+                selectedBrands.add(b);
+                chip.classList.add('active');
+            }
+            renderBrandTable();
+            renderBrandAvgTrend();
+        };
+        container.appendChild(chip);
+    });
+}
 
-    const W = 500, H = 260, padL = 50, padR = 20, padT = 20, padB = 40;
-    const chartW = W - padL - padR;
-    const chartH = H - padT - padB;
+function selectAllBrands() {
+    document.querySelectorAll('.brand-chip').forEach(c => {
+        selectedBrands.add(c.textContent);
+        c.classList.add('active');
+    });
+    renderBrandTable();
+    renderBrandAvgTrend();
+}
 
-    const maxVal = Math.max(...weeks.map(w => {
-        const e = evolution[w];
-        return e.alkosto_cheaper + e.falabella_cheaper + e.same_price;
-    }), 1);
+function clearAllBrands() {
+    selectedBrands.clear();
+    document.querySelectorAll('.brand-chip').forEach(c => c.classList.remove('active'));
+    renderBrandTable();
+    renderBrandAvgTrend();
+}
 
-    const svg = createSVG(W, H);
-    const barGroupW = chartW / weeks.length;
-    const barW = barGroupW * 0.6;
+/* ===== LEFT: Product Price Table ===== */
 
-    for (let i = 0; i <= 4; i++) {
-        const y = padT + chartH - (i / 4) * chartH;
-        const val = Math.round((i / 4) * maxVal);
-        svgEl(svg, "line", {x1: padL, y1: y, x2: W - padR, y2: y, stroke: "#eee", "stroke-width": 1});
-        svgEl(svg, "text", {x: padL - 8, y: y + 4, "text-anchor": "end", "font-size": "11", fill: "#888"}).textContent = val;
+function renderBrandTable() {
+    const container = document.getElementById('brandProductTable');
+    container.innerHTML = '';
+
+    const retailerFilter = document.getElementById('filter-brand-retailer').value;
+    const weeks = getLastNWeeks(5);
+    const products = getFilteredProducts();
+
+    if (products.length === 0 || weeks.length === 0) {
+        container.innerHTML = '<p style="text-align:center;color:#999;padding:30px;">Select brands to see product prices</p>';
+        return;
     }
 
-    weeks.forEach((w, i) => {
-        const e = evolution[w];
-        const x = padL + i * barGroupW + (barGroupW - barW) / 2;
-        let yBase = padT + chartH;
+    // Build table
+    const table = document.createElement('table');
 
-        [{ val: e.alkosto_cheaper, color: "#27ae60" }, { val: e.falabella_cheaper, color: "#3498db" }, { val: e.same_price, color: "#95a5a6" }].forEach(seg => {
-            const h = (seg.val / maxVal) * chartH;
-            yBase -= h;
-            svgEl(svg, "rect", { x: x, y: yBase, width: barW, height: h, fill: seg.color, rx: 2 });
-            if (h > 16) {
-                svgEl(svg, "text", {
-                    x: x + barW / 2, y: yBase + h / 2 + 4,
-                    "text-anchor": "middle", "font-size": "11", fill: "white", "font-weight": "600"
-                }).textContent = seg.val;
+    // Header
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    const thProduct = document.createElement('th');
+    thProduct.textContent = 'Product';
+    headerRow.appendChild(thProduct);
+    weeks.forEach(w => {
+        const th = document.createElement('th');
+        th.textContent = w;
+        headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    // Body — compute avg change for sorting
+    const tbody = document.createElement('tbody');
+    const rows = products.map(p => {
+        const prices = weeks.map(w => getProductPrice(p, w, retailerFilter));
+        // Compute absolute change between last two weeks
+        let absChange = 0;
+        if (prices.length >= 2) {
+            const last = prices[prices.length - 1];
+            const prev = prices[prices.length - 2];
+            if (last !== null && prev !== null && prev > 0) {
+                absChange = Math.abs((last - prev) / prev);
             }
+        }
+        return { product: p, prices, absChange };
+    });
+
+    // Sort by absolute change descending
+    rows.sort((a, b) => b.absChange - a.absChange);
+
+    rows.forEach(r => {
+        const tr = document.createElement('tr');
+        const tdName = document.createElement('td');
+        const shortName = r.product.homologated_product.length > 28
+            ? r.product.homologated_product.substring(0, 28) + '\u2026'
+            : r.product.homologated_product;
+        tdName.textContent = shortName;
+        tdName.title = r.product.homologated_product;
+        tr.appendChild(tdName);
+
+        r.prices.forEach((price, wi) => {
+            const td = document.createElement('td');
+            if (price === null) {
+                td.textContent = '—';
+                td.style.color = '#ccc';
+            } else {
+                td.textContent = formatPriceShort(price);
+                // Color relative to previous week
+                if (wi > 0 && r.prices[wi - 1] !== null) {
+                    const prevP = r.prices[wi - 1];
+                    if (price > prevP * 1.005) td.className = 'price-up';
+                    else if (price < prevP * 0.995) td.className = 'price-down';
+                    else td.className = 'price-same';
+                }
+            }
+            tr.appendChild(td);
         });
 
-        svgEl(svg, "text", {
-            x: x + barW / 2, y: H - 10,
-            "text-anchor": "middle", "font-size": "12", fill: "#555", "font-weight": "600"
-        }).textContent = w;
+        tbody.appendChild(tr);
+    });
+
+    table.appendChild(tbody);
+    container.appendChild(table);
+}
+
+/* ===== RIGHT: Average Price Trend Line Chart ===== */
+
+function renderBrandAvgTrend() {
+    const container = document.getElementById('brandAvgTrendChart');
+    container.innerHTML = '';
+
+    const weeks = getLastNWeeks(5);
+    const products = getFilteredProducts();
+    const retailerFilter = document.getElementById('filter-brand-retailer').value;
+
+    console.log('[BrandAvgTrend] weeks:', weeks, 'products:', products.length, 'retailer:', retailerFilter);
+
+    if (products.length === 0 || weeks.length < 2) {
+        container.innerHTML = '<p style="text-align:center;color:#999;padding:40px;">Need 2+ weeks and selected brands</p>';
+        return;
+    }
+
+    // Compute average price per week
+    const avgPrices = weeks.map(w => ({ week: w, avg: getAvgPrice(products, w, retailerFilter) }));
+    console.log('[BrandAvgTrend] avgPrices:', avgPrices);
+    const valid = avgPrices.filter(d => d.avg !== null);
+
+    if (valid.length < 2) {
+        container.innerHTML = '<p style="text-align:center;color:#999;padding:40px;">Insufficient data</p>';
+        return;
+    }
+
+    const W = 500, H = 280;
+    const padL = 70, padR = 20, padT = 20, padB = 40;
+    const chartW = W - padL - padR;
+    const chartH = H - padT - padB;
+
+    const minP = Math.min(...valid.map(d => d.avg)) * 0.95;
+    const maxP = Math.max(...valid.map(d => d.avg)) * 1.05;
+    const rangeP = maxP - minP || 1;
+
+    const svg = createSVG(W, H);
+
+    // Grid lines
+    const nGrid = 5;
+    for (let i = 0; i <= nGrid; i++) {
+        const y = padT + (i / nGrid) * chartH;
+        const val = maxP - (i / nGrid) * rangeP;
+        svgEl(svg, "line", {x1: padL, y1: y, x2: W - padR, y2: y, stroke: "#eee", "stroke-width": 1});
+        svgEl(svg, "text", {x: padL - 8, y: y + 4, "text-anchor": "end", "font-size": "10", fill: "#999"}).textContent = formatPriceAxis(val);
+    }
+
+    // X labels
+    valid.forEach((d, i) => {
+        const x = padL + (i / (valid.length - 1)) * chartW;
+        svgEl(svg, "text", {x: x, y: H - 10, "text-anchor": "middle", "font-size": "11", fill: "#666", "font-weight": "500"}).textContent = d.week;
+    });
+
+    // Line
+    const points = valid.map((d, i) => {
+        const x = padL + (i / (valid.length - 1)) * chartW;
+        const y = padT + ((maxP - d.avg) / rangeP) * chartH;
+        return { x, y, ...d };
+    });
+
+    const linePath = points.map((p, i) => (i === 0 ? 'M' : 'L') + p.x + ',' + p.y).join(' ');
+    svgEl(svg, "path", {d: linePath, fill: "none", stroke: "#667eea", "stroke-width": 2.5, "stroke-linecap": "round", "stroke-linejoin": "round"});
+
+    // Area fill
+    const areaPath = linePath + ' L' + points[points.length - 1].x + ',' + (padT + chartH) + ' L' + points[0].x + ',' + (padT + chartH) + ' Z';
+    svgEl(svg, "path", {d: areaPath, fill: "url(#brandTrendGrad)", opacity: 0.15});
+
+    // Gradient def
+    const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+    const grad = document.createElementNS("http://www.w3.org/2000/svg", "linearGradient");
+    grad.setAttribute("id", "brandTrendGrad");
+    grad.setAttribute("x1", "0"); grad.setAttribute("y1", "0");
+    grad.setAttribute("x2", "0"); grad.setAttribute("y2", "1");
+    const s1 = document.createElementNS("http://www.w3.org/2000/svg", "stop");
+    s1.setAttribute("offset", "0%"); s1.setAttribute("stop-color", "#667eea");
+    const s2 = document.createElementNS("http://www.w3.org/2000/svg", "stop");
+    s2.setAttribute("offset", "100%"); s2.setAttribute("stop-color", "#667eea");
+    grad.appendChild(s1); grad.appendChild(s2);
+    defs.appendChild(grad);
+    svg.appendChild(defs);
+
+    // Dots with tooltips + value labels
+    const tooltip = document.getElementById('brandChartTooltip');
+    points.forEach(p => {
+        const circle = svgEl(svg, "circle", {cx: p.x, cy: p.y, r: 6, fill: "white", stroke: "#667eea", "stroke-width": 2.5, style: "cursor:pointer;"});
+        // Native title for accessibility
+        const title = document.createElementNS("http://www.w3.org/2000/svg", "title");
+        title.textContent = `${p.week}: ${formatPrice(p.avg)}`;
+        circle.appendChild(title);
+        // Custom tooltip on hover
+        circle.addEventListener('mouseenter', (e) => {
+            if (!tooltip) return;
+            tooltip.innerHTML = `<strong>${p.week}</strong><br>${formatPrice(p.avg)}`;
+            tooltip.style.display = 'block';
+        });
+        circle.addEventListener('mousemove', (e) => {
+            if (!tooltip) return;
+            const rect = container.getBoundingClientRect();
+            tooltip.style.left = (e.clientX - rect.left) + 'px';
+            tooltip.style.top = (e.clientY - rect.top - 8) + 'px';
+        });
+        circle.addEventListener('mouseleave', () => {
+            if (tooltip) tooltip.style.display = 'none';
+        });
+        // Value label above dot
+        svgEl(svg, "text", {x: p.x, y: p.y - 12, "text-anchor": "middle", "font-size": "10", fill: "#667eea", "font-weight": "700"}).textContent = formatPriceAxis(p.avg);
+    });
+
+    container.appendChild(svg);
+}
+
+function renderBrandAnalysis() {
+    initBrandPanel();
+    renderBrandTable();
+    renderBrandAvgTrend();
+}
+
+/* ============================================================
+   TIER DEFINITIONS
+   ============================================================ */
+
+const TIER_DEFS = {
+    'Smartphones': { low: [0, 1152000], medium: [1153000, 2499000], high: [2500000, Infinity] },
+    'Tablets':     { low: [0, 1152000], medium: [1153000, 2499000], high: [2500000, Infinity] },
+    'Wearables':   { low: [0, 699000],   medium: [700000, 1599000],  high: [1600000, Infinity] },
+    'Audio':       { low: [0, 199000],   medium: [200000, 699000],   high: [700000, Infinity] }
+};
+
+function getTier(price, category) {
+    const def = TIER_DEFS[category];
+    if (!def || price === null || price === undefined) return null;
+    if (price <= def.low[1]) return 'Low';
+    if (price <= def.medium[1]) return 'Medium';
+    return 'High';
+}
+
+function getTierLabel(category, tier) {
+    const def = TIER_DEFS[category];
+    if (!def) return tier;
+    const ranges = {
+        low: `0 - ${(def.low[1]/1000).toFixed(0)}k`,
+        medium: `${(def.medium[0]/1000).toFixed(0)} - ${(def.medium[1]/1000).toFixed(0)}k`,
+        high: `${(def.high[0]/1000).toFixed(0)}k+`
+    };
+    return `${tier} (${ranges[tier.toLowerCase()]})`;
+}
+
+/* ============================================================
+   CHART: Price Movement Direction by Tier
+   ============================================================ */
+
+function renderTierMovementChart() {
+    const container = document.getElementById('tierMovementChart');
+    container.innerHTML = '';
+
+    const catFilter = document.getElementById('filter-tier-category').value;
+    const retailerFilter = document.getElementById('filter-tier-retailer').value;
+
+    if (!catFilter) {
+        container.innerHTML = '<p style="text-align:center;color:#999;padding:40px;">Select a category to view tier trends</p>';
+        return;
+    }
+
+    // Get products for this category
+    let products = DATA.products.filter(p => p.category === catFilter);
+    if (retailerFilter) {
+        products = products.filter(p => {
+            const wd = p.weeks[currentWeek];
+            if (!wd) return false;
+            if (retailerFilter === 'Alkosto') return wd.alkosto !== null;
+            if (retailerFilter === 'Falabella') return wd.falabella !== null;
+            return true;
+        });
+    }
+
+    // Count increases/decreases per tier
+    const tierData = { Low: { inc: 0, dec: 0 }, Medium: { inc: 0, dec: 0 }, High: { inc: 0, dec: 0 } };
+
+    products.forEach(p => {
+        const wd = p.weeks[currentWeek];
+        if (!wd) return;
+        const price = retailerFilter === 'Alkosto' ? wd.alkosto :
+                      retailerFilter === 'Falabella' ? wd.falabella :
+                      (wd.alkosto || wd.falabella);
+        const tier = getTier(price, catFilter);
+        if (!tier) return;
+
+        // Check if price increased or decreased vs previous week
+        const prevWeek = getPrevWeek(currentWeek);
+        if (prevWeek) {
+            const prevPrice = retailerFilter === 'Alkosto' ? p.weeks[prevWeek]?.alkosto :
+                              retailerFilter === 'Falabella' ? p.weeks[prevWeek]?.falabella :
+                              (p.weeks[prevWeek]?.alkosto || p.weeks[prevWeek]?.falabella);
+            if (prevPrice !== null && price !== null && prevPrice > 0) {
+                if (price > prevPrice) tierData[tier].inc++;
+                else if (price < prevPrice) tierData[tier].dec++;
+            }
+        }
+    });
+
+    const tiers = ['Low', 'Medium', 'High'];
+    const maxVal = Math.max(...tiers.map(t => tierData[t].inc + tierData[t].dec), 1);
+    const barW = 36, groupGap = 60, W = 500;
+    const totalBarsW = 3 * (barW * 2 + 2) + 2 * groupGap;
+    const offsetX = (W - totalBarsW) / 2;
+    const H = 240, padT = 20, padB = 55;
+    const chartH = H - padT - padB;
+
+    const svg = createSVG(W, H);
+
+    // Y axis grid lines (full width)
+    for (let i = 0; i <= 4; i++) {
+        const y = padT + chartH - (i / 4) * chartH;
+        const val = Math.round((i / 4) * maxVal);
+        svgEl(svg, "line", {x1: 40, y1: y, x2: W - 20, y2: y, stroke: "#eee", "stroke-width": 1});
+        svgEl(svg, "text", {x: 36, y: y + 4, "text-anchor": "end", "font-size": "10", fill: "#888"}).textContent = val;
+    }
+
+    const tierColors = { Low: '#3498db', Medium: '#f39c12', High: '#e74c3c' };
+
+    tiers.forEach((tier, i) => {
+        const groupX = offsetX + i * (barW * 2 + 2 + groupGap);
+        const incH = (tierData[tier].inc / maxVal) * chartH;
+        const decH = (tierData[tier].dec / maxVal) * chartH;
+
+        // Increase bar
+        svgEl(svg, "rect", {x: groupX, y: padT + chartH - incH, width: barW, height: incH, fill: '#e74c3c', rx: 2, opacity: 0.8});
+        if (incH > 14) svgEl(svg, "text", {x: groupX + barW/2, y: padT + chartH - incH + 14, "text-anchor": "middle", "font-size": "10", fill: "white", "font-weight": "600"}).textContent = tierData[tier].inc;
+
+        // Decrease bar
+        svgEl(svg, "rect", {x: groupX + barW + 2, y: padT + chartH - decH, width: barW, height: decH, fill: '#27ae60', rx: 2, opacity: 0.8});
+        if (decH > 14) svgEl(svg, "text", {x: groupX + barW + 2 + barW/2, y: padT + chartH - decH + 14, "text-anchor": "middle", "font-size": "10", fill: "white", "font-weight": "600"}).textContent = tierData[tier].dec;
+
+        // Label (centered under group)
+        svgEl(svg, "text", {x: groupX + barW + 1, y: H - 15, "text-anchor": "middle", "font-size": "11", fill: "#555", "font-weight": "600"}).textContent = getTierLabel(catFilter, tier);
     });
 
     container.appendChild(svg);
     const legend = document.createElement('div');
     legend.className = 'chart-legend';
     legend.innerHTML = `
-        <div class="chart-legend-item"><div class="chart-legend-color" style="background:#27ae60"></div>Alkosto Cheaper</div>
-        <div class="chart-legend-item"><div class="chart-legend-color" style="background:#3498db"></div>Falabella Cheaper</div>
-        <div class="chart-legend-item"><div class="chart-legend-color" style="background:#95a5a6"></div>Same Price</div>
+        <div class="chart-legend-item"><div class="chart-legend-color" style="background:#e74c3c"></div>Increases</div>
+        <div class="chart-legend-item"><div class="chart-legend-color" style="background:#27ae60"></div>Decreases</div>
     `;
     container.appendChild(legend);
 }
 
 /* ============================================================
-   CHART: Cheaper Retailer Distribution (Donut)
+   CHART: Most Volatile Products by Tier
    ============================================================ */
 
-function renderCompetitivenessChart() {
-    const container = document.getElementById('competitivenessChart');
+function renderTierVolatileChart() {
+    const container = document.getElementById('tierVolatileChart');
     container.innerHTML = '';
-    const k = DATA.kpis[currentWeek];
 
-    const segments = [
-        { label: 'Alkosto Cheaper', val: k.alkosto_cheaper, color: '#27ae60' },
-        { label: 'Falabella Cheaper', val: k.falabella_cheaper, color: '#3498db' },
-        { label: 'Same Price', val: k.same_price, color: '#95a5a6' },
-        { label: 'N/A', val: k.na_count, color: '#ecf0f1' },
-    ];
+    const catFilter = document.getElementById('filter-tier-category').value;
+    const retailerFilter = document.getElementById('filter-tier-retailer').value;
 
-    const total = segments.reduce((s, seg) => s + seg.val, 0);
-    if (total === 0) { container.innerHTML = '<p>No data</p>'; return; }
-
-    const size = 220;
-    const cx = size / 2, cy = size / 2, r = 80, innerR = 50;
-    const svg = createSVG(size, size);
-
-    let startAngle = -90;
-    segments.forEach(seg => {
-        if (seg.val === 0) return;
-        const angle = (seg.val / total) * 360;
-        const endAngle = startAngle + angle;
-        const startRad = (startAngle * Math.PI) / 180;
-        const endRad = (endAngle * Math.PI) / 180;
-
-        const x1 = cx + r * Math.cos(startRad);
-        const y1 = cy + r * Math.sin(startRad);
-        const x2 = cx + r * Math.cos(endRad);
-        const y2 = cy + r * Math.sin(endRad);
-        const ix1 = cx + innerR * Math.cos(endRad);
-        const iy1 = cy + innerR * Math.sin(endRad);
-        const ix2 = cx + innerR * Math.cos(startRad);
-        const iy2 = cy + innerR * Math.sin(startRad);
-
-        const largeArc = angle > 180 ? 1 : 0;
-        const d = `M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} L ${ix1} ${iy1} A ${innerR} ${innerR} 0 ${largeArc} 0 ${ix2} ${iy2} Z`;
-        svgEl(svg, "path", { d: d, fill: seg.color, stroke: "white", "stroke-width": 2 });
-        startAngle = endAngle;
-    });
-
-    svgEl(svg, "text", { x: cx, y: cy - 6, "text-anchor": "middle", "font-size": "22", "font-weight": "700", fill: "#333" }).textContent = total;
-    svgEl(svg, "text", { x: cx, y: cy + 14, "text-anchor": "middle", "font-size": "11", fill: "#888" }).textContent = "Total";
-
-    const legend = document.createElement('div');
-    legend.className = 'donut-legend';
-    legend.style.cssText = 'display:flex;flex-direction:column;gap:10px;margin-left:20px;';
-    segments.forEach(seg => {
-        const pct = ((seg.val / total) * 100).toFixed(1);
-        legend.innerHTML += `<div class="donut-legend-item">
-            <div class="donut-legend-color" style="background:${seg.color}"></div>
-            <span>${seg.label}: ${seg.val} (${pct}%)</span>
-        </div>`;
-    });
-
-    container.innerHTML = '';
-    const donutWrap = document.createElement('div');
-    donutWrap.className = 'donut-container';
-    donutWrap.appendChild(svg);
-    donutWrap.appendChild(legend);
-    container.appendChild(donutWrap);
-}
-
-/* ============================================================
-   CHART: Top Differences (Horizontal bars)
-   ============================================================ */
-
-function renderTopDiffChart() {
-    const container = document.getElementById('topDiffChart');
-    container.innerHTML = '';
-    const topDiffs = DATA.top_differences[currentWeek];
-    if (!topDiffs || topDiffs.length === 0) { container.innerHTML = '<p>No data</p>'; return; }
-
-    const maxAbs = Math.max(...topDiffs.map(d => Math.abs(d.diff_pct)), 0.01);
-    const barH = 20, gap = 5, labelW = 180, W = 500;
-    const chartW = W - labelW - 40;
-    const H = topDiffs.length * (barH + gap) + 20;
-    const svg = createSVG(W, H);
-
-    topDiffs.forEach((d, i) => {
-        const y = i * (barH + gap) + 8;
-        const shortName = d.product.length > 22 ? d.product.substring(0, 22) + '\u2026' : d.product;
-        const pct = (Math.abs(d.diff_pct) / maxAbs) * chartW;
-        const color = d.diff_pct < 0 ? '#27ae60' : '#e74c3c';
-
-        svgEl(svg, "text", {x: labelW - 6, y: y + barH / 2 + 4, "text-anchor": "end", "font-size": "10", fill: "#555"}).textContent = shortName;
-        svgEl(svg, "rect", {x: labelW, y: y, width: pct, height: barH, fill: color, rx: 2});
-        svgEl(svg, "text", {x: labelW + pct + 4, y: y + barH / 2 + 4, "font-size": "10", fill: color, "font-weight": "600"}).textContent = (d.diff_pct * 100).toFixed(2) + '%';
-    });
-
-    container.appendChild(svg);
-}
-
-/* ============================================================
-   CHART: Price Difference Distribution (Histogram)
-   ============================================================ */
-
-function renderDiffDistChart() {
-    const container = document.getElementById('diffDistChart');
-    container.innerHTML = '';
-    const dist = DATA.diff_distribution[currentWeek];
-    if (!dist || dist.length === 0) { container.innerHTML = '<p>No data</p>'; return; }
-
-    const W = 500, H = 260, padL = 50, padR = 20, padT = 20, padB = 50;
-    const chartW = W - padL - padR;
-    const chartH = H - padT - padB;
-    const maxVal = Math.max(...dist.map(d => d.count), 1);
-    const barW = chartW / dist.length;
-
-    const svg = createSVG(W, H);
-
-    for (let i = 0; i <= 4; i++) {
-        const y = padT + chartH - (i / 4) * chartH;
-        const val = Math.round((i / 4) * maxVal);
-        svgEl(svg, "line", {x1: padL, y1: y, x2: W - padR, y2: y, stroke: "#eee", "stroke-width": 1});
-        svgEl(svg, "text", {x: padL - 8, y: y + 4, "text-anchor": "end", "font-size": "11", fill: "#888"}).textContent = val;
+    if (!catFilter) {
+        container.innerHTML = '<p style="text-align:center;color:#999;padding:40px;">Select a category to view tier trends</p>';
+        return;
     }
 
-    dist.forEach((d, i) => {
-        const x = padL + i * barW + barW * 0.1;
-        const w = barW * 0.8;
-        const h = (d.count / maxVal) * chartH;
-        const y = padT + chartH - h;
-        const color = d.label.includes('+') ? '#e74c3c' : (d.label.includes('-') ? '#27ae60' : '#95a5a6');
-        svgEl(svg, "rect", {x: x, y: y, width: w, height: h, fill: color, rx: 2, opacity: 0.8});
-        if (h > 16) svgEl(svg, "text", {x: x + w / 2, y: y + h / 2 + 4, "text-anchor": "middle", "font-size": "11", fill: "white", "font-weight": "600"}).textContent = d.count;
-        svgEl(svg, "text", {x: x + w / 2, y: H - 10, "text-anchor": "middle", "font-size": "9", fill: "#555", transform: `rotate(-30, ${x + w / 2}, ${H - 10})`}).textContent = d.label;
+    let products = DATA.products.filter(p => p.category === catFilter);
+
+    // Calculate volatility with detailed weekly changes
+    const volatility = [];
+    products.forEach(p => {
+        const wd = p.weeks[currentWeek];
+        if (!wd) return;
+        const price = retailerFilter === 'Alkosto' ? wd.alkosto :
+                      retailerFilter === 'Falabella' ? wd.falabella :
+                      (wd.alkosto || wd.falabella);
+        const tier = getTier(price, catFilter);
+        if (!tier) return;
+
+        // Collect detailed weekly changes
+        let weeklyChanges = [];
+        for (let i = 1; i < DATA.weeks.length; i++) {
+            const prevW = DATA.weeks[i-1];
+            const currW = DATA.weeks[i];
+            const prevP = retailerFilter === 'Alkosto' ? p.weeks[prevW]?.alkosto :
+                          retailerFilter === 'Falabella' ? p.weeks[prevW]?.falabella :
+                          (p.weeks[prevW]?.alkosto || p.weeks[prevW]?.falabella);
+            const currP = retailerFilter === 'Alkosto' ? p.weeks[currW]?.alkosto :
+                          retailerFilter === 'Falabella' ? p.weeks[currW]?.falabella :
+                          (p.weeks[currW]?.alkosto || p.weeks[currW]?.falabella);
+            if (prevP !== null && currP !== null && prevP > 0 && prevP !== currP) {
+                const pctChange = ((currP - prevP) / prevP * 100).toFixed(1);
+                weeklyChanges.push({
+                    week: currW,
+                    from: prevP,
+                    to: currP,
+                    pct: pctChange
+                });
+            }
+        }
+
+        volatility.push({ product: p.homologated_product, tier, changes: weeklyChanges.length, weeklyChanges, product_key: p.product_key });
+    });
+
+    // Group by tier, sort by changes desc, take top 5
+    const byTier = { Low: [], Medium: [], High: [] };
+    volatility.forEach(v => { if (byTier[v.tier]) byTier[v.tier].push(v); });
+    Object.values(byTier).forEach(arr => arr.sort((a, b) => b.changes - a.changes));
+
+    const maxChanges = Math.max(...volatility.map(v => v.changes), 1);
+    const barH = 16, gap = 3, labelW = 150, W = 500;
+    const chartW = W - labelW - 50;
+    let totalH = 20;
+    const tierColors = { Low: '#3498db', Medium: '#f39c12', High: '#e74c3c' };
+
+    ['Low', 'Medium', 'High'].forEach(t => { totalH += 20 + byTier[t].slice(0, 5).length * (barH + gap) + 10; });
+    const H = totalH;
+    const svg = createSVG(W, H);
+
+    let yOff = 10;
+    ['Low', 'Medium', 'High'].forEach(tier => {
+        // Tier header
+        svgEl(svg, "text", {x: 10, y: yOff + 12, "font-size": "11", fill: tierColors[tier], "font-weight": "700"}).textContent = getTierLabel(catFilter, tier);
+        yOff += 20;
+
+        byTier[tier].slice(0, 5).forEach(v => {
+            const shortName = v.product.length > 18 ? v.product.substring(0, 18) + '\u2026' : v.product;
+            const barW = (v.changes / maxChanges) * chartW;
+
+            const textEl = svgEl(svg, "text", {x: labelW - 4, y: yOff + barH / 2 + 4, "text-anchor": "end", "font-size": "9", fill: "#555"});
+            textEl.textContent = shortName;
+            if (v.product.length > 18) {
+                const title = document.createElementNS("http://www.w3.org/2000/svg", "title");
+                title.textContent = v.product;
+                textEl.appendChild(title);
+            }
+
+            // Bar with tooltip showing weekly change details
+            const barRect = svgEl(svg, "rect", {x: labelW, y: yOff, width: barW, height: barH, fill: tierColors[tier], rx: 2, opacity: 0.7, style: "cursor:help;"});
+            if (v.weeklyChanges.length > 0) {
+                const tooltipText = v.weeklyChanges.map(ch => 
+                    `${ch.week}: ${formatPriceShort(ch.from)} \u2192 ${formatPriceShort(ch.to)} (${ch.pct > 0 ? '+' : ''}${ch.pct}%)`
+                ).join('\n');
+                const title = document.createElementNS("http://www.w3.org/2000/svg", "title");
+                title.textContent = tooltipText;
+                barRect.appendChild(title);
+            }
+
+            svgEl(svg, "text", {x: labelW + barW + 4, y: yOff + barH / 2 + 4, "font-size": "9", fill: tierColors[tier], "font-weight": "600"}).textContent = v.changes + ' changes';
+            yOff += barH + gap;
+        });
+        yOff += 10;
     });
 
     container.appendChild(svg);
@@ -1068,9 +1557,9 @@ function renderDiffDistChart() {
 
 function renderMatrixHeader() {
     const tr = document.getElementById('matrix-header');
-    let html = '<th>Product</th><th>Brand</th><th>Category</th>';
+    let html = '<th>Product</th><th>Product Name</th><th>Brand</th><th>Category</th>';
     DATA.weeks.forEach(w => { html += `<th>Alk ${w}</th><th>Fal ${w}</th>`; });
-    html += '<th>Total Δ%</th><th>Trend</th><th>Cheapest</th>';
+    html += '<th>Total \u0394%</th><th>Trend</th><th>Cheapest</th>';
     tr.innerHTML = html;
 }
 
@@ -1090,16 +1579,15 @@ function renderMatrix() {
     });
 
     tbody.innerHTML = filtered.map(p => {
-        let html = `<td>${p.product_key}</td><td>${p.brand}</td><td>${p.category}</td>`;
-        let lastAlk = null, lastFal = null;
+        const shortName = p.homologated_product.length > 25 ? p.homologated_product.substring(0, 25) + '\u2026' : p.homologated_product;
+        let html = `<td>${p.product_key}</td>`;
+        html += `<td title="${p.homologated_product}" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:help;">${shortName}</td>`;
+        html += `<td>${p.brand}</td><td>${p.category}</td>`;
         DATA.weeks.forEach(w => {
             const wd = p.weeks[w];
             html += `<td>${formatPrice(wd.alkosto)}</td><td>${formatPrice(wd.falabella)}</td>`;
-            if (wd.alkosto !== null) lastAlk = wd.alkosto;
-            if (wd.falabella !== null) lastFal = wd.falabella;
         });
 
-        // Total change from first to last available week
         let totalDelta = 'N/A';
         const firstAlk = Object.values(p.weeks).find(v => v.alkosto !== null);
         const lastAlkEntry = [...Object.values(p.weeks)].reverse().find(v => v.alkosto !== null);
@@ -1118,24 +1606,66 @@ function renderMatrix() {
 }
 
 /* ============================================================
-   ALERTS
+   ALERTS - 2 COLUMNS
    ============================================================ */
 
+let alertDataIncrease = [];
+let alertDataDecrease = [];
+
 function renderAlerts() {
-    const container = document.getElementById('alerts-container');
-    const alerts = DATA.alerts;
+    const catFilter = document.getElementById('filter-alerts-category').value;
+
+    let alerts = DATA.alerts || [];
+    if (catFilter) {
+        alerts = alerts.filter(a => {
+            const product = DATA.products.find(p => p.homologated_product === a.product);
+            return product && product.category === catFilter;
+        });
+    }
+
+    alertDataIncrease = alerts.filter(a => a.title.includes('Increase'));
+    alertDataDecrease = alerts.filter(a => a.title.includes('Decrease'));
+
+    renderAlertColumn('increase', alertDataIncrease, 'alerts-increase', 'btn-more-increase');
+    renderAlertColumn('decrease', alertDataDecrease, 'alerts-decrease', 'btn-more-decrease');
+}
+
+function renderAlertColumn(type, alerts, containerId, btnId) {
+    const container = document.getElementById(containerId);
+    const btn = document.getElementById(btnId);
+
     if (alerts.length === 0) {
-        container.innerHTML = '<div class="alert-card info"><div class="alert-title">No alerts</div><div class="alert-desc">All products within normal range.</div></div>';
+        container.innerHTML = '<div class="alert-card info"><div class="alert-title">No ' + type + ' alerts</div></div>';
+        btn.style.display = 'none';
         return;
     }
 
-    container.innerHTML = alerts.slice(0, 30).map(a => {
-        const typeCls = a.type === 'warning' ? 'warning' : (a.type === 'info' ? 'info' : '');
-        return `<div class="alert-card ${typeCls}">
+    const visible = alerts.slice(0, 5);
+    const hidden = alerts.slice(5);
+
+    container.innerHTML = visible.map(a => {
+        const cls = type === 'decrease' ? 'decrease' : '';
+        return `<div class="alert-card ${cls}">
+            <div class="alert-title">${a.title}</div>
+            <div class="alert-desc">${a.description}</div>
+        </div>`;
+    }).join('') + hidden.map(a => {
+        const cls = type === 'decrease' ? 'decrease' : '';
+        return `<div class="alert-card ${cls} alert-hidden" data-alert="${type}">
             <div class="alert-title">${a.title}</div>
             <div class="alert-desc">${a.description}</div>
         </div>`;
     }).join('');
+
+    btn.style.display = hidden.length > 0 ? 'inline-block' : 'none';
+    btn.textContent = `Ver m\u00e1s (${hidden.length})`;
+}
+
+function showMoreAlerts(type) {
+    document.querySelectorAll(`.alert-hidden[data-alert="${type}"]`).forEach(el => {
+        el.classList.remove('alert-hidden');
+    });
+    document.getElementById('btn-more-' + type).style.display = 'none';
 }
 
 /* ============================================================
@@ -1165,7 +1695,7 @@ function renderTable() {
         const cheaperClass = w.cheaper === 'Alkosto' ? 'cheaper-alkosto' : (w.cheaper === 'Falabella' ? 'cheaper-falabella' : '');
         return `<tr>
             <td>${p.product_key}</td>
-            <td>${p.homologated_product}</td>
+            <td title="${p.homologated_product}" style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:help;">${p.homologated_product}</td>
             <td>${p.category}</td>
             <td>${p.brand}</td>
             <td>${formatPrice(w.alkosto)}</td>
@@ -1177,6 +1707,15 @@ function renderTable() {
 }
 
 /* ============================================================
+   HELPERS
+   ============================================================ */
+
+function getPrevWeek(week) {
+    const idx = DATA.weeks.indexOf(week);
+    return idx > 0 ? DATA.weeks[idx - 1] : null;
+}
+
+/* ============================================================
    FILTERS
    ============================================================ */
 
@@ -1184,6 +1723,7 @@ function populateFilters() {
     const cats = [...new Set(DATA.products.map(p => p.category).filter(Boolean))];
     const brands = [...new Set(DATA.products.map(p => p.brand).filter(Boolean))];
 
+    // Matrix filters
     ['filter-category', 'filter2-category'].forEach(id => {
         const sel = document.getElementById(id);
         cats.forEach(c => { const opt = document.createElement('option'); opt.value = c; opt.textContent = c; sel.appendChild(opt); });
@@ -1193,6 +1733,35 @@ function populateFilters() {
         brands.forEach(b => { const opt = document.createElement('option'); opt.value = b; opt.textContent = b; sel.appendChild(opt); });
     });
 
+    // Week filters
+    DATA.weeks.forEach(w => {
+        ['filter-top-week', 'filter-matrix-week', 'filter2-week', 'filter-cat-week'].forEach(id => {
+            const sel = document.getElementById(id);
+            if (sel) { const opt = document.createElement('option'); opt.value = w; opt.textContent = w; sel.appendChild(opt); };
+        });
+    });
+
+    // Top variations category filter
+    const topCat = document.getElementById('filter-top-category');
+    cats.forEach(c => { const opt = document.createElement('option'); opt.value = c; opt.textContent = c; topCat.appendChild(opt); });
+
+    // Evolution category filter
+    const evoCat = document.getElementById('filter-evo-category');
+    cats.forEach(c => { const opt = document.createElement('option'); opt.value = c; opt.textContent = c; evoCat.appendChild(opt); });
+
+    // Brand analysis category filter
+    const brandCat = document.getElementById('filter-brand-category');
+    cats.forEach(c => { const opt = document.createElement('option'); opt.value = c; opt.textContent = c; brandCat.appendChild(opt); });
+
+    // Tier category filter
+    const tierCat = document.getElementById('filter-tier-category');
+    Object.keys(TIER_DEFS).forEach(c => { const opt = document.createElement('option'); opt.value = c; opt.textContent = c; tierCat.appendChild(opt); });
+
+    // Alerts category filter
+    const alertsCat = document.getElementById('filter-alerts-category');
+    cats.forEach(c => { const opt = document.createElement('option'); opt.value = c; opt.textContent = c; alertsCat.appendChild(opt); });
+
+    // Event listeners
     ['filter-category', 'filter-brand', 'filter-trend', 'filter-search'].forEach(id => {
         document.getElementById(id).addEventListener('change', renderMatrix);
     });
@@ -1202,6 +1771,32 @@ function populateFilters() {
         document.getElementById(id).addEventListener('change', renderTable);
     });
     document.getElementById('filter2-search').addEventListener('input', renderTable);
+
+    // Top variations filters
+    ['filter-top-category', 'filter-top-week'].forEach(id => {
+        document.getElementById(id).addEventListener('change', () => { renderTopIncreaseChart(); renderTopDecreaseChart(); });
+    });
+
+    // Category filters
+    ['filter-cat-week'].forEach(id => {
+        document.getElementById(id).addEventListener('change', renderCategoryChangeChart);
+    });
+
+    // Brand analysis filters
+    ['filter-brand-category', 'filter-brand-retailer'].forEach(id => {
+        document.getElementById(id).addEventListener('change', renderBrandAnalysis);
+    });
+
+    // Tier filters
+    ['filter-tier-category', 'filter-tier-retailer'].forEach(id => {
+        document.getElementById(id).addEventListener('change', () => { renderTierMovementChart(); renderTierVolatileChart(); });
+    });
+
+    // Alerts filter
+    document.getElementById('filter-alerts-category').addEventListener('change', renderAlerts);
+
+    // Evolution category filter
+    document.getElementById('filter-evo-category').addEventListener('change', renderEvolutionChart);
 }
 
 /* ============================================================
